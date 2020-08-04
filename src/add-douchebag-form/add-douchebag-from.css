@@ -1,0 +1,20 @@
+.douchebag-form {
+  width: 100%;
+  display: flex;
+  flex-wrap: nowrap;
+  border: 1px solid black;
+  border-radius: 2px;
+  margin-bottom: 15px;
+}
+
+.form__input {
+  padding: 5px;
+  border: none;
+  width: 100%;
+}
+
+.form__submit {
+  border: none;
+  background-color: rgba(0, 0, 0, .2);
+  font-weight: bolder;
+}

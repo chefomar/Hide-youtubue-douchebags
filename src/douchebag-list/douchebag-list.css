@@ -1,0 +1,30 @@
+.douchebags {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  font-weight: bold;
+}
+
+.douchebag {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px;
+}
+
+.douchebag:hover {
+  background-color: rgba(0, 0, 0, .2);
+}
+
+.remove-douchebag {
+  background: rgba(0, 0, 0, .1);
+  color: #ff0000;
+  font-weight: bolder;
+  border: none;
+  padding: 0;
+  background: url('/icons/trash.png');
+  background-repeat: no-repeat;
+  background-position: center center;
+  height: 30px;
+  width: 30px;
+}
