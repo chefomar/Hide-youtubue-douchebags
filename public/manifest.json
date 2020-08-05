@@ -4,9 +4,6 @@
   "description": "Hide youtube channels from your feed forever",
   "permissions": [
     "storage",
-    "activeTab",
-    "webNavigation",
-    "tabs",
     "webRequest",
     "https://*.youtube.com/*"
   ],
