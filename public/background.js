@@ -22,19 +22,6 @@ chrome.runtime.onConnect.addListener(function(clientPort) {
   }
 });
 
-function historyUpdatedCallback(details) {
-  notify('navigation');
-}
-
-chrome.webNavigation.onHistoryStateUpdated.addListener(
-  historyUpdatedCallback,
-  {
-    url: [
-      { hostContains: '.youtube.' }
-    ]
-  }
-);
-
 function webRequestCompletedCallback(details) {
   notify('request');
 }

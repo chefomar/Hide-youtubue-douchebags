@@ -1,97 +1,117 @@
 let port = null;
-let videoCollections = null;
+let videos = [];
 let douchebags = [];
 
-function getDouchebags(callback) {
-  chrome.storage.sync.get({ douchebags: [] }, function (obj) {
-    douchebags = obj.douchebags;
-    callback();
-  });
-}
-
-function isDouchebag(channelName) {
-  return douchebags.includes(channelName);
-}
-
-function hideDouchbags(videos) {
-  for (let i = 0; i < videos.length; i++) {
-    const video = videos[i];
-    const channelNameTag = video.querySelector('ytd-channel-name a');
-
-    if (channelNameTag != null && isDouchebag(channelNameTag.textContent)) {
-      video.parentNode.removeChild(video);
-    }
-  }
-}
-
-function checkAndHideDouchebags() {
-  for (const collection of videoCollections) {
-    hideDouchbags(collection);
-  }
-}
-
-function createPort() {
+function createPort(callback) {
   port = chrome.runtime.connect();
 
   port.onDisconnect.addListener(function () {
     port = null;
 
-    createPort();
+    createPort(callback);
   });
 
-  port.onMessage.addListener(function (message) {
-    if (message.type === 'navigation') {
-      const ytNavProgress = document.getElementsByTagName('yt-page-navigation-progress');
+  port.onMessage.addListener(() => callback());
+}
 
-      if (ytNavProgress.length === 0) {
-        checkAndHideDouchebags();
-      } else {
-        const progressIndicator = ytNavProgress.item(0);
-        const observer = new MutationObserver(function() {
-          if (!progressIndicator.hasAttribute('hidden')) {
-            checkAndHideDouchebags();
-            observer.disconnect();
-          }
-        });
-
-        observer.observe(progressIndicator, { attributes: true, attributeFilter: ['hidden'] });
-      }
-    }
-
-    checkAndHideDouchebags();
-  });
+function getDouchebags(callback) {
+  chrome.storage.sync.get({ douchebags: [] }, callback);
 }
 
 function getVideos() {
-  return [
-    document.getElementsByTagName('ytd-video-renderer'),
-    document.getElementsByTagName('ytd-rich-item-renderer'),
-    document.getElementsByTagName('ytd-grid-video-renderer')
-  ];
+  return document.querySelectorAll('ytd-video-renderer, ytd-rich-item-renderer, ytd-grid-video-renderer');
 }
 
-function start() {
-  videoCollections = getVideos();
+function getChannelName(video) {
+  const channelNameNode = video.querySelector('ytd-channel-name a');
 
-  getDouchebags(function () {
-    checkAndHideDouchebags();
+  if (channelNameNode == null) {
+    return '';
+  }
 
-    createPort();
+  return channelNameNode.textContent;
+}
+
+function isDouchebag(channelName) {
+  return douchebags.indexOf(channelName) >= 0;
+}
+
+function hideDouchbags() {
+  videos = getVideos();
+
+  for (const video of videos) {
+    if (isDouchebag(getChannelName(video))) {
+      video.parentNode.removeChild(video);
+    }
+  }
+}
+
+// navigation
+function listenToNavigationChanges() {
+  const ytNavigationProgress = document.querySelector('yt-page-navigation-progress');
+
+  const observer = new MutationObserver(function () {
+    if (ytNavigationProgress.hasAttribute('hidden')) {
+      // navigation complete
+      hideDouchbags();
+    }
   });
 
-  chrome.storage.onChanged.addListener(function (changes, area) {
+  observer.observe(ytNavigationProgress, { attributes: true, attributeFilter: ['hidden', 'aria-valuenow', 'aria-valuemax'] });
+}
+
+// request
+function onRequestCompleted() {
+  hideDouchbags();
+}
+
+// storage change
+function listenToStorageChange() {
+  chrome.storage.onChanged.addListener(function(changes, area) {
     if (area !== 'sync' || changes.douchebags == null) {
       return;
     }
 
-    douchebags = changes.douchebags.newValue;
+    douchebags = [...changes.douchebags.newValue];
 
-    checkAndHideDouchebags();
+    hideDouchbags();
   });
 }
 
+// start
+function onStart() {
+  getDouchebags(
+    function (obj) {
+      douchebags = obj.douchebags;
+
+      hideDouchbags();
+
+      createPort(onRequestCompleted);
+
+      listenToStorageChange();
+
+      const youtube = document.querySelector('ytd-app');
+
+      const observer = new MutationObserver(function () {
+        if (document.querySelector('yt-page-navigation-progress') != null) {
+          listenToNavigationChanges();
+          observer.disconnect();
+        }
+      });
+
+      observer.observe(youtube, { childList: true });
+    }
+  );
+}
+
+function ready() {
+  onStart();
+
+  document.removeEventListener('readystatechange', ready);
+}
+
 if (document.readyState === 'loading') {
-  window.addEventListener('DOMContentLoaded', start)
+  document.addEventListener('DOMContentLoaded', ready);
 } else {
-  start();
+  onStart();
 }
