@@ -41,7 +41,7 @@ function hideDouchbags() {
 
   for (const video of videos) {
     if (isDouchebag(getChannelName(video))) {
-      video.parentNode.removeChild(video);
+      video.classList.add('douchebag');
     }
   }
 }

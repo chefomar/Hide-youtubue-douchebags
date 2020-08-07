@@ -15,7 +15,8 @@
       "runAt": "document_start",
       "js": [
         "./content-scripts/hide-douchebag.js"
-      ]
+      ],
+      "css": ["./content-scripts/douchebags.css"]
     }
   ],
   "browser_action": {

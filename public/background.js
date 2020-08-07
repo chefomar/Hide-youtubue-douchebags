@@ -1,25 +1,17 @@
-let port = null;
-let shouldNotify = false;
+let tabs = [];
 
 function notify(type) {
-  if (port == null) {
-    shouldNotify = true;
-    return;
+  for (const tab of tabs) {
+    tab.port.postMessage({ type });
   }
-
-  port.postMessage({ type });
 }
 
 chrome.runtime.onConnect.addListener(function(clientPort) {
-  port = clientPort;
+  tabs.push({ tab: clientPort.sender.tab.id, port: clientPort });
 
-  port.onDisconnect.addListener(function() {
-    port = null;
+  clientPort.onDisconnect.addListener(function() {
+    tabs = tabs.filter(tab => tab.port.sender.tab.id !== clientPort.sender.tab.id);
   });
-
-  if (shouldNotify) {
-    notify();
-  }
 });
 
 function webRequestCompletedCallback(details) {
